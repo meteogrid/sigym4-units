@@ -37,6 +37,7 @@ module Sigym4.Units (
 -- * Re-exports
 , module NonSI
 , module SIUnits
+, module DP
 ) where
 
 import           Sigym4.Null

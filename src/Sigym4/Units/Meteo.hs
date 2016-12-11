@@ -3,7 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Sigym4.Units.Meteo (
-  CloudCover
+  CloudCover (..)
 --, RelativeHumidity
 --, AirTemperature
 ) where
