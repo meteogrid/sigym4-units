@@ -35,20 +35,36 @@ module Sigym4.Units (
 
 
 -- * Re-exports
-, module NonSI
-, module SIUnits
-, module DP
+, Dimensional (..) -- Re-export constructor so coerce can find it
+, Quantity
+, Unit
+, Metricality (..)
+-- ** Quantity Synonyms
+, Dimensionless
+, Length
+, Mass
+, Time
+, ElectricCurrent
+, ThermodynamicTemperature
+, AmountOfSubstance
+, LuminousIntensity
+, weaken
+, module Numeric.Units.Dimensional.SIUnits
+, module Numeric.Units.Dimensional.NonSI
 ) where
 
 import           Sigym4.Null
+import           Control.DeepSeq (NFData(rnf))
 import           Control.Newtype
 import           Data.Functor.Identity
 import           Data.Default
-import           Numeric.Units.Dimensional as DP hiding ((*~), (/~))
+import           Foreign.Storable (Storable)
+import           Numeric.Units.Dimensional as DP hiding ((*~), (/~), (+), (-), (*), (/))
 import qualified Numeric.Units.Dimensional as DP
+import qualified Numeric.Units.Dimensional.Coercion (Dimensional(Quantity))
 import           Numeric.Units.Dimensional.UnitNames (atom)
-import           Numeric.Units.Dimensional.SIUnits as SIUnits
-import           Numeric.Units.Dimensional.NonSI as NonSI
+import           Numeric.Units.Dimensional.SIUnits
+import           Numeric.Units.Dimensional.NonSI
 
 type family Units       q :: *
 type family MachineType q :: *
@@ -79,7 +95,7 @@ instance (Num a, Fractional a) => HasUnits (DP.Quantity u a)
 
 -- | This represents a dimensionless normalized ratio in the range [0,1]
 newtype NormRatio = NormRatio (DP.Dimensionless Double)
-  deriving (Eq, Ord, Show, HasUnits)
+  deriving (Eq, Ord, Show, HasUnits, Storable, NFData)
 
 type instance Units       NormRatio = Units       (DP.Dimensionless Double)
 type instance MachineType NormRatio = MachineType (DP.Dimensionless Double)
@@ -106,7 +122,7 @@ instance Newtype NormRatio (DP.Dimensionless Double) where
 
 -- | This represents a dimensionless ratio/fraction/etc...
 newtype Ratio = Ratio (DP.Dimensionless Double)
-  deriving (Eq, Ord, Show, HasUnits)
+  deriving (Eq, Ord, Show, HasUnits, Storable, NFData)
 
 perCent :: Fractional a => Unit 'NonMetric DOne a
 perCent = mkUnitQ name 1e-2 one
@@ -126,7 +142,7 @@ instance Newtype Ratio (DP.Dimensionless Double) where
 
 -- | This represents a height above sea level
 newtype Height = Height (DP.Quantity DP.DLength Double)
-  deriving (Eq, Ord, Show, HasUnits)
+  deriving (Eq, Ord, Show, HasUnits, Storable, NFData)
 
 type instance Units       Height = Units       (DP.Quantity DP.DLength Double)
 type instance MachineType Height = MachineType (DP.Quantity DP.DLength Double)
@@ -142,7 +158,7 @@ instance Newtype Height (DP.Quantity DP.DLength Double) where
 --
 -- | This represents a distance
 newtype Distance = Distance (DP.Quantity DP.DLength Double)
-  deriving (Eq, Ord, Show, HasUnits)
+  deriving (Eq, Ord, Show, HasUnits, Storable, NFData)
 
 type instance Units       Distance = Units       (DP.Quantity DP.DLength Double)
 type instance MachineType Distance = MachineType (DP.Quantity DP.DLength Double)
@@ -153,3 +169,15 @@ instance HasNull Distance where
 instance Newtype Distance (DP.Quantity DP.DLength Double) where
   pack                = Distance
   unpack (Distance r) = r
+
+
+
+instance Fractional a => Default (Unit 'NonMetric DOne a) where
+  def = perOne
+
+instance Fractional a => Default (Unit 'Metric DLength a) where
+  def = meter
+
+instance Fractional a => Default (Unit 'NonMetric DLength a) where
+  def = weaken meter
+

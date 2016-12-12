@@ -28,5 +28,6 @@ library
     , dimensional  >=1.0 && <1.1
     , sigym4-null
     , newtype
+    , deepseq
   hs-source-dirs:      src
   default-language:    Haskell2010
