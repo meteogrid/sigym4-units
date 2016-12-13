@@ -11,8 +11,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Sigym4.Units.Internal (
 -- * Types
-  Units
-, HasUnits(..)
+  HasUnits(..)
 -- * Functions
 , deriveHasUnits
 
@@ -60,25 +59,23 @@ import           Numeric.Units.Dimensional.SIUnits
 import           Numeric.Units.Dimensional.NonSI
 import           Language.Haskell.TH
 
-type family Units       q :: *
-
 class HasUnits q a | q -> a where
+  type Units   q a :: *
 
   infixl 7 *~
   (*~) :: a
-       -> Units q
+       -> Units q a
        -> q
 
 
   infixl 7 /~
   (/~) :: q
-       -> Units q
+       -> Units q a
        -> a
-
-type instance Units       (DP.Quantity u a) = DP.Unit 'DP.NonMetric u a
 
 instance (Num a, Fractional a) => HasUnits (DP.Quantity u a) a
   where
+  type Units (DP.Quantity u a) a = DP.Unit 'DP.NonMetric u a
   (*~) = (DP.*~)
   (/~) = (DP./~)
   {-# INLINE (*~) #-}
@@ -101,11 +98,11 @@ deriveHasUnits ta pa upa = ta >>= \case
         ma = return (VarT (case ma' of {PlainTV a->a; KindedTV a _->a}))
 
     in [d|instance $sig => HasUnits $t $ma where
+            type Units $t $ma = Units $a $ma
             a *~ u = $pack' (a *~ u)
             a /~ u = $unpack' a /~ u
             {-# INLINE (*~) #-}
             {-# INLINE (/~) #-}
-          type instance Units $t = Units $a
           instance Newtype $t $a where
             pack   = $pack'
             unpack = $unpack'
@@ -117,11 +114,11 @@ deriveHasUnits ta pa upa = ta >>= \case
         unpack' = return (VarE upa)
         ma = return ma'
     in [d|instance HasUnits $t $ma where
+            type Units $t $ma = Units $a $ma
             a *~ u = $pack' (a *~ u)
             a /~ u = $unpack' a /~ u
             {-# INLINE (*~) #-}
             {-# INLINE (/~) #-}
-          type instance Units $t = Units $a
           instance Newtype $t $a where
             pack   = $pack'
             unpack = $unpack'
