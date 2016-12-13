@@ -2,6 +2,10 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ConstraintKinds #-}
 module Sigym4.Units.Meteo (
   CloudCover (..)
 --, RelativeHumidity
@@ -17,11 +21,7 @@ import           Data.Functor.Identity
 import           Foreign.Storable (Storable)
 
 -- | This represents the cloud coverage normalized ratio
-newtype CloudCover = CC NormRatio
-  deriving (Eq, Ord, Show, HasUnits, HasNull, Storable, NFData)
+newtype CloudCover a = CloudCover { getCloudCover :: NormRatio a }
+  deriving (Eq, Ord, Show, HasNull, Storable, NFData)
 
-type instance Units       CloudCover = Units NormRatio
-type instance MachineType CloudCover = MachineType NormRatio
-instance Newtype CloudCover NormRatio where
-  pack          = CC
-  unpack (CC r) = r
+deriveHasUnits [t|forall a. (Fractional a, Eq a) => CloudCover a -> NormRatio a|] 'CloudCover 'getCloudCover

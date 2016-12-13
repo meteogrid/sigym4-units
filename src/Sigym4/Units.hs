@@ -5,17 +5,20 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ConstraintKinds #-}
 module Sigym4.Units (
 -- * Types
   Units
-, MachineType
 , HasUnits(..)
+, deriveHasUnits
 
 -- * Basic units
 --
--- ** Ratios/Fractions/etc..
+-- ** Ratios\/ Fractions\/etc...
 -- *** 'Ratio'
 , Ratio (..)
 
@@ -35,6 +38,7 @@ module Sigym4.Units (
 
 
 -- * Re-exports
+-- ** Types
 , Dimensional (..) -- Re-export constructor so coerce can find it
 , Quantity
 , Unit
@@ -48,11 +52,23 @@ module Sigym4.Units (
 , ThermodynamicTemperature
 , AmountOfSubstance
 , LuminousIntensity
+-- ** 'Dimension' Synonyms
+, DOne
+, DLength
+, DMass
+, DTime
+, DElectricCurrent
+, DThermodynamicTemperature
+, DAmountOfSubstance
+, DLuminousIntensity
+-- ** Functions
 , weaken
+-- ** Modules
 , module Numeric.Units.Dimensional.SIUnits
 , module Numeric.Units.Dimensional.NonSI
 ) where
 
+import           Sigym4.Units.Internal
 import           Sigym4.Null
 import           Control.DeepSeq (NFData(rnf))
 import           Control.Newtype
@@ -66,42 +82,14 @@ import           Numeric.Units.Dimensional.UnitNames (atom)
 import           Numeric.Units.Dimensional.SIUnits
 import           Numeric.Units.Dimensional.NonSI
 
-type family Units       q :: *
-type family MachineType q :: *
-
-class HasUnits q where
-
-
-  infixl 7 *~
-  (*~) :: MachineType q
-       -> Units q
-       -> q
-
-
-  infixl 7 /~
-  (/~) :: q
-       -> Units q
-       -> MachineType q
-
-type instance Units       (DP.Quantity u a) = DP.Unit 'DP.NonMetric u a
-type instance MachineType (DP.Quantity u a) = a
-
-instance (Num a, Fractional a) => HasUnits (DP.Quantity u a)
-  where
-  (*~) = (DP.*~)
-  (/~) = (DP./~)
-  {-# INLINE (*~) #-}
-  {-# INLINE (/~) #-}
-
 -- | This represents a dimensionless normalized ratio in the range [0,1]
-newtype NormRatio = NormRatio (DP.Dimensionless Double)
-  deriving (Eq, Ord, Show, HasUnits, Storable, NFData)
+newtype NormRatio a = NormRatio { getNormRatio :: DP.Dimensionless a }
+  deriving (Eq, Ord, Show, Storable, NFData)
 
-type instance Units       NormRatio = Units       (DP.Dimensionless Double)
-type instance MachineType NormRatio = MachineType (DP.Dimensionless Double)
-
-instance HasNull NormRatio where
+instance (Fractional a, Eq a) => HasNull (NormRatio a) where
   nullValue = NormRatio ((-1) DP.*~ DP.one)
+
+deriveHasUnits [t|forall a. (Fractional a, Eq a) => NormRatio a -> DP.Dimensionless a|] 'NormRatio 'getNormRatio
 
 
 -- | Smart constructor for 'NormRatio's which verifies that the value is indeed
@@ -109,68 +97,36 @@ instance HasNull NormRatio where
 --
 -- Useful to interface with external sources
 
-nRatio :: Double -> Maybe NormRatio
+nRatio :: (Num a, Ord a) => a -> Maybe (NormRatio a)
 nRatio n | n>=0, n<=1 = Just (NormRatio (n DP.*~ DP.one))
 nRatio _              = Nothing
 
--- | WARNING: This instance allows the creation of invalid values (ie: not in
--- [0,1]), but so does '*~' so we provide it anyway.
-instance Newtype NormRatio (DP.Dimensionless Double) where
-  pack                 = NormRatio
-  unpack (NormRatio r) = r
-
-
 -- | This represents a dimensionless ratio/fraction/etc...
-newtype Ratio = Ratio (DP.Dimensionless Double)
-  deriving (Eq, Ord, Show, HasUnits, Storable, NFData)
+newtype Ratio a = Ratio { getRatio :: DP.Dimensionless a }
+  deriving (Eq, Ord, Show, Storable, NFData)
 
-perCent :: Fractional a => Unit 'NonMetric DOne a
-perCent = mkUnitQ name 1e-2 one
-  where name = atom "[%]" "%" "Per cent"
-
-perOne :: Fractional a => Unit 'NonMetric DOne a
-perOne = mkUnitQ name 1.0 one
-  where name = atom "[one]" "one" "Ratio"
-
-type instance Units       Ratio = Units       (DP.Dimensionless Double)
-type instance MachineType Ratio = MachineType (DP.Dimensionless Double)
-
-instance Newtype Ratio (DP.Dimensionless Double) where
-  pack             = Ratio
-  unpack (Ratio r) = r
+deriveHasUnits [t|forall a. (Fractional a, Eq a) => Ratio a -> DP.Dimensionless a|] 'Ratio 'getRatio
 
 
 -- | This represents a height above sea level
-newtype Height = Height (DP.Quantity DP.DLength Double)
-  deriving (Eq, Ord, Show, HasUnits, Storable, NFData)
+newtype Height a = Height { getHeight :: DP.Quantity DP.DLength a }
+  deriving (Eq, Ord, Show, Storable, NFData)
 
-type instance Units       Height = Units       (DP.Quantity DP.DLength Double)
-type instance MachineType Height = MachineType (DP.Quantity DP.DLength Double)
+deriveHasUnits [t|forall a. (Fractional a, Eq a) => Height a -> DP.Length a|] 'Height 'getHeight
 
-instance HasNull Height where
+instance (Eq a, Fractional a) => HasNull (Height a) where
   nullValue = Height ((-9999) DP.*~ meter)
-
-instance Newtype Height (DP.Quantity DP.DLength Double) where
-  pack              = Height
-  unpack (Height r) = r
 
 
 --
 -- | This represents a distance
-newtype Distance = Distance (DP.Quantity DP.DLength Double)
-  deriving (Eq, Ord, Show, HasUnits, Storable, NFData)
+newtype Distance a = Distance { getDistance :: DP.Quantity DP.DLength a }
+  deriving (Eq, Ord, Show, Storable, NFData)
 
-type instance Units       Distance = Units       (DP.Quantity DP.DLength Double)
-type instance MachineType Distance = MachineType (DP.Quantity DP.DLength Double)
+deriveHasUnits [t|forall a. (Fractional a, Eq a) => Distance a -> DP.Length a|] 'Distance 'getDistance
 
-instance HasNull Distance where
+instance (Eq a, Fractional a) => HasNull (Distance a) where
   nullValue = Distance ((-9999) DP.*~ meter)
-
-instance Newtype Distance (DP.Quantity DP.DLength Double) where
-  pack                = Distance
-  unpack (Distance r) = r
-
-
 
 instance Fractional a => Default (Unit 'NonMetric DOne a) where
   def = perOne
@@ -181,3 +137,10 @@ instance Fractional a => Default (Unit 'Metric DLength a) where
 instance Fractional a => Default (Unit 'NonMetric DLength a) where
   def = weaken meter
 
+perCent :: Fractional a => Unit 'NonMetric DOne a
+perCent = mkUnitQ name 1e-2 one
+  where name = atom "[%]" "%" "Per cent"
+
+perOne :: Fractional a => Unit 'NonMetric DOne a
+perOne = mkUnitQ name 1.0 one
+  where name = atom "[one]" "one" "Ratio"

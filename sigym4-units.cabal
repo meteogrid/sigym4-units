@@ -21,6 +21,8 @@ library
       Sigym4.Units
     , Sigym4.Units.Meteo
     , Sigym4.Units.Fire
+  other-modules:
+      Sigym4.Units.Internal
   build-depends:
       base         >=4.9 && <4.10
     , data-default >=0.7 && <0.8
@@ -29,5 +31,6 @@ library
     , sigym4-null
     , newtype
     , deepseq
+    , template-haskell
   hs-source-dirs:      src
   default-language:    Haskell2010
