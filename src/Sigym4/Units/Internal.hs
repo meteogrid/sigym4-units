@@ -110,5 +110,21 @@ deriveHasUnits ta pa upa = ta >>= \case
             pack   = $pack'
             unpack = $unpack'
       |]
+  AppT (AppT ArrowT t') a'@(AppT _ ma') ->
+    let t = return t'
+        a = return a'
+        pack' = return (ConE pa)
+        unpack' = return (VarE upa)
+        ma = return ma'
+    in [d|instance HasUnits $t $ma where
+            a *~ u = $pack' (a *~ u)
+            a /~ u = $unpack' a /~ u
+            {-# INLINE (*~) #-}
+            {-# INLINE (/~) #-}
+          type instance Units $t = Units $a
+          instance Newtype $t $a where
+            pack   = $pack'
+            unpack = $unpack'
+      |]
   _ -> fail "deriveHasUnits expects a type of the form: \"NewType -> UnderlyingType\""
 
