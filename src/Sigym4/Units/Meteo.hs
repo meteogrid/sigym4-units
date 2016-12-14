@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE Trustworthy #-}
 module Sigym4.Units.Meteo (
   CloudCover (..)
 --, RelativeHumidity
