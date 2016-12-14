@@ -12,7 +12,8 @@
 {-# LANGUAGE ConstraintKinds #-}
 module Sigym4.Units (
 -- * Types
-  HasUnits(..)
+  Units
+, HasUnits(..)
 , deriveHasUnits
 
 -- * Basic units
