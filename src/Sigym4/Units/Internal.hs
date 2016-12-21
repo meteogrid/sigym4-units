@@ -60,7 +60,7 @@ import           Numeric.Units.Dimensional.SIUnits
 import           Numeric.Units.Dimensional.NonSI
 import           Language.Haskell.TH
 
-type family Units q :: * -> *
+type family Units q a :: *
 
 class HasUnits q a | q -> a where
 
@@ -75,7 +75,7 @@ class HasUnits q a | q -> a where
        -> Units q a
        -> a
 
-type instance Units (DP.Quantity u a) = DP.Unit 'DP.NonMetric u
+type instance Units (DP.Quantity u a) a = DP.Unit 'DP.NonMetric u a
 
 instance (Num a, Fractional a) => HasUnits (DP.Quantity u a) a
   where
@@ -108,7 +108,7 @@ deriveHasUnits ta pa upa = ta >>= \case
           instance Newtype $t $a where
             pack   = $pack'
             unpack = $unpack'
-          type instance Units $t = Units $a
+          type instance Units $t $ma = Units $a $ma
       |]
   AppT (AppT ArrowT t') a'@(AppT _ ma') ->
     let t = return t'
@@ -124,7 +124,7 @@ deriveHasUnits ta pa upa = ta >>= \case
           instance Newtype $t $a where
             pack   = $pack'
             unpack = $unpack'
-          type instance Units $t = Units $a
+          type instance Units $t $ma = Units $a $ma
       |]
   _ -> fail "deriveHasUnits expects a type of the form: \"NewType -> UnderlyingType\""
 
