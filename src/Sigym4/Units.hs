@@ -67,14 +67,16 @@ module Sigym4.Units (
 -- ** Modules
 , module Numeric.Units.Dimensional.SIUnits
 , module Numeric.Units.Dimensional.NonSI
+, module Numeric.Units.Dimensional.Quantities
 ) where
 
 import           Sigym4.Units.Internal
 import           Sigym4.Null
 import           Control.DeepSeq (NFData(rnf))
 import           Control.Newtype
-import           Data.Functor.Identity
 import           Data.Default
+import           Data.Fingerprint
+import           Data.Functor.Identity
 import           Foreign.Storable (Storable)
 import           Numeric.Units.Dimensional as DP hiding ((*~), (/~), (+), (-), (*), (/))
 import qualified Numeric.Units.Dimensional as DP
@@ -82,10 +84,13 @@ import qualified Numeric.Units.Dimensional.Coercion (Dimensional(Quantity))
 import           Numeric.Units.Dimensional.UnitNames (atom)
 import           Numeric.Units.Dimensional.SIUnits
 import           Numeric.Units.Dimensional.NonSI
+import           Numeric.Units.Dimensional.Quantities
 
 -- | This represents a dimensionless normalized ratio in the range [0,1]
 newtype NormRatio a = NormRatio { getNormRatio :: DP.Dimensionless a }
   deriving (Eq, Ord, Show, Storable, NFData)
+
+instance Storable a => HasFingerprint (NormRatio a)
 
 instance (Fractional a, Eq a) => HasNull (NormRatio a) where
   nullValue = NormRatio ((-1) DP.*~ DP.one)
@@ -105,6 +110,7 @@ nRatio _              = Nothing
 -- | This represents a dimensionless ratio/fraction/etc...
 newtype Ratio a = Ratio { getRatio :: DP.Dimensionless a }
   deriving (Eq, Ord, Show, Storable, NFData)
+instance Storable a => HasFingerprint (Ratio a)
 
 deriveHasUnits [t|forall a. (Fractional a, Eq a) => Ratio a -> DP.Dimensionless a|] 'Ratio 'getRatio
 
@@ -112,6 +118,8 @@ deriveHasUnits [t|forall a. (Fractional a, Eq a) => Ratio a -> DP.Dimensionless 
 -- | This represents a height above sea level
 newtype Height a = Height { getHeight :: DP.Quantity DP.DLength a }
   deriving (Eq, Ord, Show, Storable, NFData)
+
+instance Storable a => HasFingerprint (Height a)
 
 deriveHasUnits [t|forall a. (Fractional a, Eq a) => Height a -> DP.Length a|] 'Height 'getHeight
 
@@ -123,6 +131,7 @@ instance (Eq a, Fractional a) => HasNull (Height a) where
 -- | This represents a distance
 newtype Distance a = Distance { getDistance :: DP.Quantity DP.DLength a }
   deriving (Eq, Ord, Show, Storable, NFData)
+instance Storable a => HasFingerprint (Distance a)
 
 deriveHasUnits [t|forall a. (Fractional a, Eq a) => Distance a -> DP.Length a|] 'Distance 'getDistance
 

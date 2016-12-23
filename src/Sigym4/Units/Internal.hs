@@ -9,6 +9,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Sigym4.Units.Internal (
 -- * Types
   Units
@@ -49,8 +50,10 @@ module Sigym4.Units.Internal (
 import           Sigym4.Null
 import           Control.DeepSeq (NFData(rnf))
 import           Control.Newtype
+import           Data.Fingerprint
 import           Data.Functor.Identity
 import           Data.Coerce
+import           Data.ExactPi (approximateValue)
 import           Foreign.Storable (Storable)
 import           Numeric.Units.Dimensional as DP hiding ((*~), (/~), (+), (-), (*), (/))
 import qualified Numeric.Units.Dimensional as DP
@@ -83,6 +86,10 @@ instance (Num a, Fractional a) => HasUnits (DP.Quantity u a) a
   (/~) = (DP./~)
   {-# INLINE (*~) #-}
   {-# INLINE (/~) #-}
+
+instance Storable a => HasFingerprint (DP.Quantity u a)
+instance (Floating a, HasFingerprint a) => HasFingerprint (DP.Unit k u a) where
+  fingerprint u = fingerprint (approximateValue (exactValue u) :: a)
 
 -- | Derives 'HasUnits' and 'Newtype' for a newtype of a 'Quantity'.
 --
@@ -126,5 +133,5 @@ deriveHasUnits ta pa upa = ta >>= \case
             unpack = $unpack'
           type instance Units $t $ma = Units $a $ma
       |]
-  _ -> fail "deriveHasUnits expects a type of the form: \"NewType -> UnderlyingType\""
+  e -> fail ("deriveHasUnits expects a type of the form: \"NewType -> UnderlyingType\", not " ++ show e)
 
