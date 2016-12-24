@@ -19,6 +19,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:
       Sigym4.Units
+    , Sigym4.Units.Prelude
     , Sigym4.Units.Meteo
     , Sigym4.Units.Fire
   other-modules:
