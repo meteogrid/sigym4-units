@@ -25,9 +25,9 @@ library
   other-modules:
       Sigym4.Units.Internal
   build-depends:
-      base         >=4.9 && <4.10
+      base         >=4.9 && <4.11
     , data-default >=0.7 && <0.8
-    , ieee754      >=0.7 && <0.8
+    , ieee754      >=0.7 && <0.9
     , dimensional  >=1.0 && <1.1
     , exact-pi
     , sigym4-null
